@@ -12,7 +12,15 @@
         "ami_name": "{{user `result_ami_name`}}",
         "ami_description": "Customized Amazon Linux with Spring Environment demo installed",
         "associate_public_ip_address": "true",
-        "source_ami": "{{user `aws_source_ami`}}"
+        "source_ami_filter": {
+            "filters": {
+                "virtualization-type": "hvm",
+                "name": "amzn2-ami-hvm-*",
+                "root-device-type": "ebs"
+            },
+            "owners": ["self", "amazon", "aws-marketplace"],
+            "most_recent": true
+        }        
     }],
     "provisioners": [
         {
