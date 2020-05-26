@@ -26,6 +26,29 @@
             "type": "shell",
             "inline": [
                 "sudo yum update -y"
+                "sudo yum install wget java-1.8.0 -y"
+                "wget https://kk-uploads-oregon.s3.amazonaws.com/spring-cloud-aws-environment-demo-1.war"
+                "mv spring-cloud-aws-environment-demo-1.war  app.war"
+                "sudo chmod +x app.war"
+                "sudo mkdir /var/app"
+                "sudo mv app.war /var/app"
+                "sudo cat > app.service <<EOF
+                "[Unit]"
+                "Description=Spring Boot Demo"
+                "[Service]"
+                "SuccessExitStatus=143"
+                "TimeoutStartSec=30"
+                "TimeoutStopSec=10"
+                "Restart=on-failure"
+                "RestartSec=5"
+                "ExecStart=/usr/bin/java -jar /var/app/app.war --server.port=80"
+                "[Install]"
+                "WantedBy=multi-user.target"
+                "EOF"
+                "sudo mv app.service /etc/systemd/system/"
+                "sudo systemctl daemon-reload"
+                "sudo systemctl enable app.service"
+                "sudo systemctl start app"
             ]
         }
     ]
