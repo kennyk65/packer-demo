@@ -17,7 +17,7 @@
                 "name": "amzn-ami*-ebs",
                 "root-device-type": "ebs"
             },
-            "owners": ["011673140073"],
+            "owners": ["011673140073", "amazon", "aws-marketplace"],
             "most_recent": true
         }
     }],
