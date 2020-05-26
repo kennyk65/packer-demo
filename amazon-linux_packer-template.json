@@ -2,7 +2,7 @@
     "variables": {
         "aws_source_ami": "{{env `SOURCE_AMI`}}",
         "aws_region": "{{env `AWS_REGION`}}",
-        "aws_ami_name": "my-amazon-linux-{{isotime | clean_resource_name}}"
+        "aws_ami_name": "my-amazon-linux-{{isotime}}"
     },
     "builders": [{
         "type": "amazon-ebs",
