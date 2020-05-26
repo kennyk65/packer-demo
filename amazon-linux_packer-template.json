@@ -1,6 +1,5 @@
 {
     "variables": {
-        "aws_source_ami": "{{env `SOURCE_AMI`}}",
         "aws_region": "{{env `AWS_REGION`}}",
         "result_ami_name": "my-amazon-linux"
     },
