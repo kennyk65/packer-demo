@@ -12,7 +12,7 @@
         "ami_name": "{{user `aws_ami_name`}}",
         "ami_description": "Customized Amazon Linux with Spring Environment demo installed",
         "associate_public_ip_address": "true",
-        "source_ami": "{{user `aws_source_ami`}}",
+        "source_ami": "{{user `aws_source_ami`}}"
     }],
     "provisioners": [
         {
