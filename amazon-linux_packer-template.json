@@ -2,14 +2,14 @@
     "variables": {
         "aws_source_ami": "{{env `SOURCE_AMI`}}",
         "aws_region": "{{env `AWS_REGION`}}",
-        "aws_ami_name": "my-amazon-linux-{{isotime}}"
+        "result_ami_name": "my-amazon-linux-{{isotime}}"
     },
     "builders": [{
         "type": "amazon-ebs",
         "region": "{{user `aws_region`}}",
         "instance_type": "t3.micro",
         "ssh_username": "ec2-user",
-        "ami_name": "{{user `aws_ami_name`}}",
+        "ami_name": "{{user `result_ami_name`}}",
         "ami_description": "Customized Amazon Linux with Spring Environment demo installed",
         "associate_public_ip_address": "true",
         "source_ami": "{{user `aws_source_ami`}}"
