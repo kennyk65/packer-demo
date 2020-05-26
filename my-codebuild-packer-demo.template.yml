@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+# Use HashiCorp Packer to build an updated AMI.
+
+Parameters:
+
+  InputGitHubRepo:
+    Description: Existing public GitHub repository with packer.json
+    Type: String
+    Default: https://github.com/kennyk65/packer-demo.git
+
+  AmazonLinux2AMI:
+    Type:  AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: You probably won't need to change this value.  This is looking up the latest Amazon Linux 2 AMI using the Parameter Store...
+
+Resources:
+
+  # This Role allows CodeBuild to do certain things on our behalf.
+  # See the policy for the interesting stuff:
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName:  !Sub ${AWS::StackName}-CodeBuildRole  
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action: sts:AssumeRole
+
+
+  # This Policy is attached to the CodeBuildRole.
+  # CodeBuild is allowed upload on S3, CodeBuild, and CloudWatch Logs; could probably be tightened quite a bit.
+  CodeBuildPolicy:
+    Type: AWS::IAM::Policy
+    Properties: 
+      PolicyName: !Sub ${AWS::StackName}-CodeBuildPolicy
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement: 
+          Effect: Allow
+          Action: 
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            - codebuild:*
+            - ec2:Describe*
+            - ec2:AttachVolume
+            - ec2:AuthorizeSecurityGroupIngress
+            - ec2:CopyImage
+            - ec2:Create*
+            - ec2:DeleteKeyPair
+            - ec2:DeleteSecurityGroup
+            - ec2:DeleteSnapshot
+            - ec2:DeleteVolume
+            - ec2:DeregisterImage
+            - ec2:Describe*
+            - ec2:Detach*
+            - ec2:Get*
+            - ec2:Modify*
+            - ec2:RegisterImage
+            - ec2:RunInstances
+            - ec2:StopInstances
+            - ec2:TerminateInstances
+          Resource: "*"
+      Roles: 
+        -  !Ref CodeBuildRole   # Attach to CodeBuildRole.
+
+
+  # The CodeBuild project 
+  MyBuild:
+    Type: AWS::CodeBuild::Project
+    Properties: 
+      Name:  !Sub ${AWS::StackName}-CodeBuildPackerDemo
+      Description: Demo of CodeBuild with Packer.
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:3.0  
+        EnvironmentVariables:
+        - Name: SOURCE_AMI
+          Value: !Ref AmazonLinux2AMI
+     #  PrivilegedMode: true      
+      Source:
+        Type: GITHUB
+        Location: !Ref InputGitHubRepo
+        BuildSpec: !Sub |
+            version: 0.2
+            # This buildspec runs Packer, creates a new AMI.
+            phases:
+              pre_build:
+                commands:
+                - echo "Installing Packer..."
+                - curl -qL -o packer.zip https://releases.hashicorp.com/packer/1.5.6/packer_1.5.6_linux_amd64.zip && unzip packer.zip
+                - curl -qL -o jq https://stedolan.github.io/jq/download/linux64/jq && chmod +x ./jq
+                - ./packer validate amazon-linux_packer-template.json
+              build:
+                commands:
+                ### HashiCorp Packer cannot currently obtain the AWS CodeBuild-assigned role and its credentials
+                ### Manually capture and configure the AWS CLI to provide HashiCorp Packer with AWS credentials
+                ### More info here: https://github.com/mitchellh/packer/issues/4279
+                - echo "Configuring AWS credentials"
+                - curl -qL -o aws_credentials.json http://169.254.170.2/$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI > aws_credentials.json
+                - aws configure set region $AWS_REGION
+                - aws configure set aws_access_key_id `./jq -r '.AccessKeyId' aws_credentials.json`
+                - aws configure set aws_secret_access_key `./jq -r '.SecretAccessKey' aws_credentials.json`
+                - aws configure set aws_session_token `./jq -r '.Token' aws_credentials.json`
+                - echo "Building HashiCorp Packer template, amazon-linux_packer-template.json"
+                - ./packer build amazon-linux_packer-template.json
+              post_build:
+                commands:
+                - echo "AMI build completed on `date`"
+      Artifacts:
+        Type: NO_ARTIFACTS  # Output will new AMI
+
