@@ -1,6 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-# Use HashiCorp Packer to build an updated AMI.
+# Use HashiCorp Packer in CodeBuild to make an updated AMI.
+# We start with the standard Amazon Linux 2 AMI, and install a Spring Boot application as a service.
+# Note: No special testing or distribution is done, build must be started manually.
+# See:  https://aws.amazon.com/blogs/devops/how-to-create-an-ami-builder-with-aws-codebuild-and-hashicorp-packer/
 
 Parameters:
 
@@ -8,11 +11,6 @@ Parameters:
     Description: Existing public GitHub repository with packer.json
     Type: String
     Default: https://github.com/kennyk65/packer-demo.git
-
-  AmazonLinux2AMI:
-    Type:  AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
-    Description: You probably won't need to change this value.  This is looking up the latest Amazon Linux 2 AMI using the Parameter Store...
 
 Resources:
 
@@ -81,10 +79,6 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:3.0  
-        EnvironmentVariables:
-        - Name: SOURCE_AMI
-          Value: !Ref AmazonLinux2AMI
-     #  PrivilegedMode: true      
       Source:
         Type: GITHUB
         Location: !Ref InputGitHubRepo
